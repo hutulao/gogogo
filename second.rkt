@@ -3,9 +3,9 @@
 (require 2htdp/image)
 
 ; distances in terms of pixels
-(define HEIGHT 80) 
-(define WIDTH 100)
-(define XSHOTS (/ WIDTH 2))
+(define HEIGHT 800) 
+(define WIDTH 1000)
+
 
 ;some struct
 (define-struct LOC [x y])
@@ -13,7 +13,7 @@
 (define-struct UFO [loc vel])
 (define-struct TANK [loc vel])
 (define-struct MISSILE [loc vel])
-(define-struct SIGS [Tank UFO MissileOrNot])
+(define-struct SIGS [Tank UFO Missile])
 (define-struct layer [color doll])
 
 ; graphical constants
@@ -24,10 +24,6 @@
 (define TANK-IMAGE (overlay/align "middle" "bottom"
                                   (circle 10 "solid" "black")
                                   (rectangle 30 10 "solid" "black")))
-
-
-
-
 
 (define (how-many list)
   (cond
@@ -212,6 +208,8 @@
     [else (inner (layer-doll an-rd))]))
 ;(inner (make-layer "yellow" (make-layer "green" "red")))
 
+
+
 (define (UFO-render ufo back)
   (place-image UFO-IMAGE (LOC-x (UFO-loc ufo)) (LOC-y (UFO-loc ufo)) back))
 ;(UFO-render (make-UFO (make-LOC 120 50) (make-VEL 1 0)) BACKGROUND)
@@ -220,22 +218,6 @@
   (place-image TANK-IMAGE (LOC-x (TANK-loc tank)) (LOC-y (TANK-loc tank)) back))
 ;(TANK-render (make-TANK (make-LOC 120 20) (make-VEL 1 0)) BACKGROUND)
 
-;(define (MISSILE-render missile back)
-;  (place-image MISSILE-IMAGE (LOC-x (MISSILE-loc missile))
-;                             (LOC-y (MISSILE-loc missile)) back))
-;(MISSILE-render (make-MISSILE (make-LOC 120 550) (make-VEL 1 0)) BACKGROUND)
-
-(define (MISSILE-render m back)
-  (cond
-    [(boolean? m) back]
-    [(MISSILE? m) (place-image MISSILE-IMAGE
-                               (LOC-x (MISSILE-loc m))
-                               (LOC-y (MISSILE-loc m)) back)]))
-
-;(MISSILE-render #false BACKGROUND)
-;(MISSILE-render (make-MISSILE (make-LOC 120 550) (make-VEL 1 0)) BACKGROUND)
-
-
 ;invader-game is a procedure
 ;interpretation game invader Tank UFO Missile 
 (define (invader-game ws)
@@ -243,7 +225,8 @@
     (on-tick move)
     (on-key key-action)
     (to-draw render)
-    (stop-when game-over? last-render)))
+    (stop-when game-over? last-render)
+    ))
 
 
 ;last-render is a procedure
@@ -252,8 +235,7 @@
   (overlay (text
             (cond
               [(>= (LOC-y (UFO-loc (SIGS-UFO s))) HEIGHT) "UFO lands game is over"]
-              [(and (MISSILE? (SIGS-MissileOrNot s))
-                    (Missile-hit? s)) "Mission accomplished"])
+              [(Missile-hit? (SIGS-Missile s) (SIGS-UFO s)) "Mission accomplished"])
             36 "olive") BACKGROUND))
 
 
@@ -264,19 +246,24 @@
 (define (game-over? s)
   (cond
     [(>= (LOC-y (UFO-loc (SIGS-UFO s))) HEIGHT) #true]
-    [(and (MISSILE? (SIGS-MissileOrNot s)) (Missile-hit? s)) #true]
+    [(Missile-hit? (SIGS-Missile s) (SIGS-UFO s)) #true]
     [else #false]))
 
 ;Missile-hit? is a procedure
 ;ws -> boolean
 ;judge missile hits the UFO
-(define (Missile-hit? s)
-  (and (>= (+ (LOC-y (UFO-loc (SIGS-UFO s))) 5)
-           (LOC-y (MISSILE-loc (SIGS-MissileOrNot s)))
-           (- (LOC-y (UFO-loc (SIGS-UFO s))) 5))
-       (>= (+ (LOC-x (UFO-loc (SIGS-UFO s))) 25)
-           (LOC-x (MISSILE-loc (SIGS-MissileOrNot s)))
-           (- (LOC-x (UFO-loc (SIGS-UFO s))) 25))))
+(define (Missile-hit? mi ufo)
+  (cond
+    [(empty? mi) #false]
+    [else (or (and (>= (+ (LOC-y (UFO-loc ufo)) 2)
+                       (LOC-y (MISSILE-loc (car mi)))
+                       (- (LOC-y (UFO-loc ufo)) 2))
+                   (>= (+ (LOC-x (UFO-loc ufo)) 2)
+                       (LOC-x (MISSILE-loc (car mi)))
+                       (- (LOC-x (UFO-loc ufo)) 2)))
+              (Missile-hit? (cdr mi) ufo))]))
+  
+
 ;key-action is a procedure
 ;ws key -> ws
 ;key TAB launch the Missile
@@ -288,18 +275,46 @@
     [(key=? key "right") (make-SIGS (make-TANK (TANK-loc (SIGS-Tank ws))
                                                (make-VEL 1 0))
                                     (SIGS-UFO ws)
-                                    (SIGS-MissileOrNot ws))]
+                                    (SIGS-Missile ws))]
     [(key=? key "left") (make-SIGS (make-TANK (TANK-loc (SIGS-Tank ws))
                                                (make-VEL -1 0))
                                     (SIGS-UFO ws)
-                                    (SIGS-MissileOrNot ws))]
+                                    (SIGS-Missile ws))]
     [(key=? key " ") (make-SIGS (SIGS-Tank ws)
                                 (SIGS-UFO ws)
-                                (if (MISSILE? (SIGS-MissileOrNot ws))
-                                    (SIGS-MissileOrNot ws)
-                                    (make-MISSILE (TANK-loc (SIGS-Tank ws))
-                                                  (make-VEL 0 -2))))]
+                                (cons (make-MISSILE (TANK-loc (SIGS-Tank ws)) (make-VEL 0 -2))
+                                      (SIGS-Missile ws)))]
     [else ws]))
+#|(key-action (make-SIGS (make-TANK (make-LOC 120 20) (make-VEL 1 0))
+                       (make-UFO (make-LOC 120 50) (make-VEL 1 0))
+                       '()) " ")
+(key-action (make-SIGS (make-TANK (make-LOC 120 20) (make-VEL 1 0))
+                       (make-UFO (make-LOC 120 50) (make-VEL 1 0))
+                       (cons (make-MISSILE (make-LOC 120 550) (make-VEL 1 0))
+                             (cons (make-MISSILE (make-LOC 220 450) (make-VEL 1 0))
+                                   (cons (make-MISSILE (make-LOC 520 650) (make-VEL 1 0)) '())))) " ")
+|#
+
+
+
+(define (Missile-move m)
+  (cond
+    [(empty? m) m]
+    [else (check-missile m)]))
+
+(define (check-missile m)
+  (cond
+    [(< (LOC-y (MISSILE-loc (car m))) 0) (Missile-move (cdr m))]
+    [else
+     (cons (make-MISSILE (make-LOC (LOC-x (MISSILE-loc (car m)))
+                                   (+ (LOC-y (MISSILE-loc (car m)))
+                                      (VEL-dy (MISSILE-vel (car m)))))
+                         (MISSILE-vel (car m)))
+           (Missile-move (cdr m)))]))
+;(Missile-move (cons (make-MISSILE (make-LOC 120 550) (make-VEL 2 0))
+;                    (cons (make-MISSILE (make-LOC 220 450) (make-VEL 2 0))
+;                          (cons (make-MISSILE (make-LOC 520 650) (make-VEL 2 0)) '()))))
+
 
 ;move is a procedure
 ;ws -> ws
@@ -307,7 +322,7 @@
 (define (move ws)
   (make-SIGS (Tank-move (SIGS-Tank ws))
              (UFO-move (SIGS-UFO ws))
-             (Missile-move (SIGS-MissileOrNot ws))))
+             (Missile-move (SIGS-Missile ws))))
 
 (define (Tank-move tank)
   (make-TANK (make-LOC (+ (LOC-x (TANK-loc tank)) (VEL-dx (TANK-vel tank)))
@@ -316,19 +331,24 @@
 ;(Tank-move (make-TANK (make-LOC 120 20) (make-VEL 1 0)))
 
 (define (UFO-move ufo)
-  (make-UFO (make-LOC (random 200 400)
+  (make-UFO (make-LOC (random 100 700)
                       (+ (LOC-y (UFO-loc ufo)) (VEL-dy (UFO-vel ufo))))
             (UFO-vel ufo)))
 ;(UFO-move (make-UFO (make-LOC 120 20) (make-VEL 1 0)))
 
-(define (Missile-move m)
+
+(define (MISSILE-render m)
   (cond
-    [(boolean? m) m]
-    [(MISSILE? m) (make-MISSILE (make-LOC (LOC-x (MISSILE-loc m))
-                                          (+ (LOC-y (MISSILE-loc m))
-                                             (VEL-dy (MISSILE-vel m))))
-                                (MISSILE-vel m))]))
-;(UFO-move (make-UFO (make-LOC 120 20) (make-VEL 1 0)))
+    [(empty? m) BACKGROUND]
+    [else (place-image MISSILE-IMAGE
+                       (LOC-x (MISSILE-loc (car m)))
+                       (LOC-y (MISSILE-loc (car m))) (MISSILE-render (cdr m)))]))
+
+
+;(MISSILE-render (cons (make-MISSILE (make-LOC 120 550) (make-VEL 1 0))
+;                      (cons (make-MISSILE (make-LOC 220 450) (make-VEL 1 0))
+;                            (cons (make-MISSILE (make-LOC 520 650) (make-VEL 1 0)) '()))) BACKGROUND)
+
 
 ;render is a procedure
 ;ws -> image
@@ -336,14 +356,13 @@
 (define (render ws)
   (TANK-render (SIGS-Tank ws)
                (UFO-render (SIGS-UFO ws)
-                           (MISSILE-render (SIGS-MissileOrNot ws) BACKGROUND))))  
+                           (MISSILE-render (SIGS-Missile ws)))))  
 
-;(invader-game (make-SIGS (make-TANK (make-LOC 120 (- HEIGHT 20)) (make-VEL 1 0))
-;                         (make-UFO (make-LOC 120 0) (make-VEL 0 1))  #false))
+(invader-game (make-SIGS (make-TANK (make-LOC 120 (- HEIGHT 20)) (make-VEL 1 0))
+                         (make-UFO (make-LOC 120 0) (make-VEL 0 1))  '()))
 ;(invader-game (make-SIGS (make-TANK (make-LOC 120 20) (make-VEL 1 0))
 ;                         (make-UFO (make-LOC 120 50) (make-VEL 1 0))
 ;                         (make-MISSILE (make-LOC 120 550) (make-VEL 1 0))))
-
 
 
 
@@ -384,5 +403,6 @@
     [on-tick tock]
     [on-key keyh]
     [to-draw to-image]))
-
 ;(main '())
+
+
