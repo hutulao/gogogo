@@ -1,5 +1,31 @@
 #lang racket
+(require 2htdp/universe)
 (require 2htdp/image)
+
+; distances in terms of pixels
+(define HEIGHT 80) 
+(define WIDTH 100)
+(define XSHOTS (/ WIDTH 2))
+
+;some struct
+(define-struct LOC [x y])
+(define-struct VEL [dx dy])
+(define-struct UFO [loc vel])
+(define-struct TANK [loc vel])
+(define-struct MISSILE [loc vel])
+(define-struct SIGS [Tank UFO MissileOrNot])
+(define-struct layer [color doll])
+
+; graphical constants
+(define BACKGROUND (empty-scene WIDTH HEIGHT))
+(define MISSILE-IMAGE (triangle 5 "solid" "red"))
+(define UFO-IMAGE (overlay (circle 10 "solid" "green") (rectangle 30 10 "solid" "green")))
+(define TANK-IMAGE (overlay/align "middle" "bottom" (circle 10 "solid" "black") (rectangle 30 10 "solid" "black")))
+
+
+
+
+
 (define (how-many list)
   (cond
     [(empty? (cdr list)) 1]
@@ -72,7 +98,6 @@
     [else (and (> (car alot) (car (cdr alot)))
                (sorted>? (cdr alot)))]))
 ;(check-sort '(120 52 34 5))
-(define-struct loc [x y])
 ;(make-list 2 (make-loc 1 2))
 
 (define (check-copier n str)
@@ -126,13 +151,13 @@
   (cond
     [(zero? (sub1 n)) img]
     [else (above img (col (sub1 n) img))]))
-(col 22 (rectangle 10 10 "outline" "black"))
+;(col 22 (rectangle 10 10 "outline" "black"))
 
 (define (row n img)
   (cond
     [(zero? (sub1 n)) img]
     [else (beside img (row (sub1 n) img))]))
-(row 22 (rectangle 10 10 "outline" "black"))
+;(row 22 (rectangle 10 10 "outline" "black"))
 
 (define (hall m n img)
   (cond
@@ -142,7 +167,7 @@
 (define background (overlay
                     (hall 20 10 (rectangle 10 10 "outline" "black"))
                     (empty-scene 100 200)))
-(define-struct LOC [x y])
+
 (define red-dot (circle 4 "solid" "red"))
 (define (add-balloons list)
   (cond
@@ -160,3 +185,190 @@
                                                  (cons (make-LOC 90 180)
                                                      (cons (make-LOC 100 200)'())))))))))))
 |#
+
+(define (depth an-rd)
+  (cond
+    [(string? an-rd) 1]
+    [else (+ 1 (depth (layer-doll an-rd)))]))
+;(depth (make-layer "pink" (make-layer "black" "white")))
+
+(define (colors an-rd)
+  (cond
+    [(string? an-rd) an-rd]
+    [else (string-append (layer-color an-rd) ", " (colors (layer-doll an-rd)))]))
+;(colors (make-layer "yellow" (make-layer "green" "red")))
+
+(define (inner an-rd)
+  (cond
+    [(string? an-rd) (triangle 40 "solid" an-rd)]
+    [else (inner (layer-doll an-rd))]))
+;(inner (make-layer "yellow" (make-layer "green" "red")))
+
+(define (UFO-render ufo back)
+  (place-image UFO-IMAGE (LOC-x (UFO-loc ufo)) (LOC-y (UFO-loc ufo)) back))
+;(UFO-render (make-UFO (make-LOC 120 50) (make-VEL 1 0)) BACKGROUND)
+
+(define (TANK-render tank back)
+  (place-image TANK-IMAGE (LOC-x (TANK-loc tank)) (LOC-y (TANK-loc tank)) back))
+;(TANK-render (make-TANK (make-LOC 120 20) (make-VEL 1 0)) BACKGROUND)
+
+;(define (MISSILE-render missile back)
+;  (place-image MISSILE-IMAGE (LOC-x (MISSILE-loc missile)) (LOC-y (MISSILE-loc missile)) back))
+;(MISSILE-render (make-MISSILE (make-LOC 120 550) (make-VEL 1 0)) BACKGROUND)
+
+(define (MISSILE-render m back)
+  (cond
+    [(boolean? m) back]
+    [(MISSILE? m) (place-image MISSILE-IMAGE (LOC-x (MISSILE-loc m)) (LOC-y (MISSILE-loc m)) back)]))
+
+;(MISSILE-render #false BACKGROUND)
+;(MISSILE-render (make-MISSILE (make-LOC 120 550) (make-VEL 1 0)) BACKGROUND)
+
+
+;invader-game is a procedure
+;interpretation game invader Tank UFO Missile 
+(define (invader-game ws)
+  (big-bang ws
+    (on-tick move)
+    (on-key key-action)
+    (to-draw render)
+    (stop-when game-over? last-render)))
+
+
+;last-render is a procedure
+;last ws -> image
+(define (last-render s)
+  (overlay (text
+            (cond
+              [(>= (LOC-y (UFO-loc (SIGS-UFO s))) HEIGHT) "UFO lands game is over"]
+              [(and (MISSILE? (SIGS-MissileOrNot s)) (Missile-hit? s)) "Mission accomplished"])
+            36 "olive") BACKGROUND))
+
+
+;game-over? is a procedure
+;ws -> end?
+;UFO lands or missile hits the UFO
+;end the game
+(define (game-over? s)
+  (cond
+    [(>= (LOC-y (UFO-loc (SIGS-UFO s))) HEIGHT) #true]
+    [(and (MISSILE? (SIGS-MissileOrNot s)) (Missile-hit? s)) #true]
+    [else #false]))
+
+;Missile-hit? is a procedure
+;ws -> boolean
+;judge missile hits the UFO
+(define (Missile-hit? s)
+  (and (>= (+ (LOC-y (UFO-loc (SIGS-UFO s))) 5)
+           (LOC-y (MISSILE-loc (SIGS-MissileOrNot s)))
+           (- (LOC-y (UFO-loc (SIGS-UFO s))) 5))
+       (>= (+ (LOC-x (UFO-loc (SIGS-UFO s))) 25)
+           (LOC-x (MISSILE-loc (SIGS-MissileOrNot s)))
+           (- (LOC-x (UFO-loc (SIGS-UFO s))) 25))))
+;key-action is a procedure
+;ws key -> ws
+;key TAB launch the Missile
+;key left arrow make Tank left move
+;key right arrow make Tank right move
+;other key ws don't change
+(define (key-action ws key)
+  (cond
+    [(key=? key "right") (make-SIGS (make-TANK (TANK-loc (SIGS-Tank ws))
+                                               (make-VEL 1 0))
+                                    (SIGS-UFO ws)
+                                    (SIGS-MissileOrNot ws))]
+    [(key=? key "left") (make-SIGS (make-TANK (TANK-loc (SIGS-Tank ws))
+                                               (make-VEL -1 0))
+                                    (SIGS-UFO ws)
+                                    (SIGS-MissileOrNot ws))]
+    [(key=? key " ") (make-SIGS (SIGS-Tank ws)
+                                (SIGS-UFO ws)
+                                (if (MISSILE? (SIGS-MissileOrNot ws))
+                                    (SIGS-MissileOrNot ws)
+                                    (make-MISSILE (TANK-loc (SIGS-Tank ws))
+                                                  (make-VEL 0 -2))))]
+    [else ws]))
+
+;move is a procedure
+;ws -> ws
+;move Tank UFO Missile 
+(define (move ws)
+  (make-SIGS (Tank-move (SIGS-Tank ws))
+             (UFO-move (SIGS-UFO ws))
+             (Missile-move (SIGS-MissileOrNot ws))))
+
+(define (Tank-move tank)
+  (make-TANK (make-LOC (+ (LOC-x (TANK-loc tank)) (VEL-dx (TANK-vel tank)))
+                       (LOC-y (TANK-loc tank)))
+             (TANK-vel tank)))
+;(Tank-move (make-TANK (make-LOC 120 20) (make-VEL 1 0)))
+
+(define (UFO-move ufo)
+  (make-UFO (make-LOC (random 200 400)
+                      (+ (LOC-y (UFO-loc ufo)) (VEL-dy (UFO-vel ufo))))
+            (UFO-vel ufo)))
+;(UFO-move (make-UFO (make-LOC 120 20) (make-VEL 1 0)))
+
+(define (Missile-move m)
+  (cond
+    [(boolean? m) m]
+    [(MISSILE? m) (make-MISSILE (make-LOC (LOC-x (MISSILE-loc m))
+                                          (+ (LOC-y (MISSILE-loc m)) (VEL-dy (MISSILE-vel m))))
+                                (MISSILE-vel m))]))
+;(UFO-move (make-UFO (make-LOC 120 20) (make-VEL 1 0)))
+
+;render is a procedure
+;ws -> image
+;render worldstate on the BACKGROUND 
+(define (render ws)
+  (TANK-render (SIGS-Tank ws)
+               (UFO-render (SIGS-UFO ws)
+                           (MISSILE-render (SIGS-MissileOrNot ws) BACKGROUND))))  
+
+;(invader-game (make-SIGS (make-TANK (make-LOC 120 (- HEIGHT 20)) (make-VEL 1 0)) (make-UFO (make-LOC 120 0) (make-VEL 0 1))  #false))
+;(invader-game (make-SIGS (make-TANK (make-LOC 120 20) (make-VEL 1 0))
+;                         (make-UFO (make-LOC 120 50) (make-VEL 1 0))
+;                         (make-MISSILE (make-LOC 120 550) (make-VEL 1 0))))
+
+
+
+
+; ShotWorld -> Image
+; adds the image of a shot for each y on w
+; at (MID,y) to the background image
+(define (to-image w)
+  (cond
+    [(empty? w) BACKGROUND]
+    [else (place-image MISSILE-IMAGE XSHOTS (car w) (to-image (cdr w)))]))
+;(to-image '(9 20 31))
+
+; ShotWorld -> ShotWorld
+; moves each shot on w up by one pixel
+(define (tock w)
+  (cond
+    [(empty? w) w]
+    [else (check-shot w)]))
+
+(define (check-shot w)
+  (cond
+    [(< (car w) 0) (tock (cdr w))]
+    [else (cons (+ -1 (car w)) (tock (cdr w)))]))
+;(tock '(1 0 -1 20 31))
+
+; ShotWorld KeyEvent -> ShotWorld
+; add a shot to the world
+; if the player presses the space bar
+(define (keyh w ke)
+  (cond
+    [(key=? " " ke) (cons HEIGHT w)]
+    [else w]))
+;(keyh '(9 20 31) " ")
+
+; ShotWorld -> ShotWorld
+(define (main w)
+  (big-bang w
+    [on-tick tock]
+    [on-key keyh]
+    [to-draw to-image]))
+
+;(main '())
