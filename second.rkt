@@ -19,8 +19,11 @@
 ; graphical constants
 (define BACKGROUND (empty-scene WIDTH HEIGHT))
 (define MISSILE-IMAGE (triangle 5 "solid" "red"))
-(define UFO-IMAGE (overlay (circle 10 "solid" "green") (rectangle 30 10 "solid" "green")))
-(define TANK-IMAGE (overlay/align "middle" "bottom" (circle 10 "solid" "black") (rectangle 30 10 "solid" "black")))
+(define UFO-IMAGE (overlay (circle 10 "solid" "green")
+                           (rectangle 30 10 "solid" "green")))
+(define TANK-IMAGE (overlay/align "middle" "bottom"
+                                  (circle 10 "solid" "black")
+                                  (rectangle 30 10 "solid" "black")))
 
 
 
@@ -70,7 +73,8 @@
 (define (ill-sized? list-image n)
   (cond
     [(empty? list-image) #false]
-    [(= n (image-width (car list-image)) (image-height (car list-image))) (car list-image)]
+    [(= n (image-width (car list-image)) (image-height (car list-image)))
+     (car list-image)]
     [else (ill-sized? (cdr list-image) n)]))
 #|(ill-sized? 
  (cons (rectangle 20 20 "solid" "silver")
@@ -172,7 +176,10 @@
 (define (add-balloons list)
   (cond
     [(empty? list) background]
-    [else (place-image red-dot (LOC-x (car list)) (LOC-y (car list)) (add-balloons (cdr list)))]))
+    [else (place-image red-dot
+                       (LOC-x (car list))
+                       (LOC-y (car list))
+                       (add-balloons (cdr list)))]))
 #|(add-balloons
  (cons (make-LOC 10 20)
        (cons (make-LOC 20 40)
@@ -183,7 +190,8 @@
                                      (cons (make-LOC 70 140)
                                            (cons (make-LOC 80 160)
                                                  (cons (make-LOC 90 180)
-                                                     (cons (make-LOC 100 200)'())))))))))))
+                                                     (cons (make-LOC 100 200)
+                                                           '())))))))))))
 |#
 
 (define (depth an-rd)
@@ -213,13 +221,16 @@
 ;(TANK-render (make-TANK (make-LOC 120 20) (make-VEL 1 0)) BACKGROUND)
 
 ;(define (MISSILE-render missile back)
-;  (place-image MISSILE-IMAGE (LOC-x (MISSILE-loc missile)) (LOC-y (MISSILE-loc missile)) back))
+;  (place-image MISSILE-IMAGE (LOC-x (MISSILE-loc missile))
+;                             (LOC-y (MISSILE-loc missile)) back))
 ;(MISSILE-render (make-MISSILE (make-LOC 120 550) (make-VEL 1 0)) BACKGROUND)
 
 (define (MISSILE-render m back)
   (cond
     [(boolean? m) back]
-    [(MISSILE? m) (place-image MISSILE-IMAGE (LOC-x (MISSILE-loc m)) (LOC-y (MISSILE-loc m)) back)]))
+    [(MISSILE? m) (place-image MISSILE-IMAGE
+                               (LOC-x (MISSILE-loc m))
+                               (LOC-y (MISSILE-loc m)) back)]))
 
 ;(MISSILE-render #false BACKGROUND)
 ;(MISSILE-render (make-MISSILE (make-LOC 120 550) (make-VEL 1 0)) BACKGROUND)
@@ -241,7 +252,8 @@
   (overlay (text
             (cond
               [(>= (LOC-y (UFO-loc (SIGS-UFO s))) HEIGHT) "UFO lands game is over"]
-              [(and (MISSILE? (SIGS-MissileOrNot s)) (Missile-hit? s)) "Mission accomplished"])
+              [(and (MISSILE? (SIGS-MissileOrNot s))
+                    (Missile-hit? s)) "Mission accomplished"])
             36 "olive") BACKGROUND))
 
 
@@ -313,7 +325,8 @@
   (cond
     [(boolean? m) m]
     [(MISSILE? m) (make-MISSILE (make-LOC (LOC-x (MISSILE-loc m))
-                                          (+ (LOC-y (MISSILE-loc m)) (VEL-dy (MISSILE-vel m))))
+                                          (+ (LOC-y (MISSILE-loc m))
+                                             (VEL-dy (MISSILE-vel m))))
                                 (MISSILE-vel m))]))
 ;(UFO-move (make-UFO (make-LOC 120 20) (make-VEL 1 0)))
 
@@ -325,7 +338,8 @@
                (UFO-render (SIGS-UFO ws)
                            (MISSILE-render (SIGS-MissileOrNot ws) BACKGROUND))))  
 
-;(invader-game (make-SIGS (make-TANK (make-LOC 120 (- HEIGHT 20)) (make-VEL 1 0)) (make-UFO (make-LOC 120 0) (make-VEL 0 1))  #false))
+;(invader-game (make-SIGS (make-TANK (make-LOC 120 (- HEIGHT 20)) (make-VEL 1 0))
+;                         (make-UFO (make-LOC 120 0) (make-VEL 0 1))  #false))
 ;(invader-game (make-SIGS (make-TANK (make-LOC 120 20) (make-VEL 1 0))
 ;                         (make-UFO (make-LOC 120 50) (make-VEL 1 0))
 ;                         (make-MISSILE (make-LOC 120 550) (make-VEL 1 0))))
