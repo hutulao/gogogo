@@ -1,6 +1,7 @@
 #lang racket
 (require 2htdp/universe)
 (require 2htdp/image)
+(require 2htdp/batch-io)
 
 ; distances in terms of pixels
 (define HEIGHT 800) 
@@ -15,6 +16,7 @@
 (define-struct ball [loc vel])
 (define-struct work [num employee rate hours])
 (define-struct paycheck [num employee pay])
+(define-struct phone [area switch four])
 
 (define (col n img)
   (cond
@@ -133,9 +135,9 @@
     [(empty? whrs) empty]
     [else (cons (wage (car whrs)) (wage* (cdr whrs)))]))
 
-(wage* (cons (make-work 123 "Matthew" 12.95 45)
-      (cons (make-work 456 "Robby" 11.95 39)
-            '())))
+;(wage* (cons (make-work 123 "Matthew" 12.95 45)
+;             (cons (make-work 456 "Robby" 11.95 39)
+;                   '())))
 
 (define (check-wage* whrs)
   (cond
@@ -161,3 +163,81 @@
                     (car list))
                 (substitute old new (cdr list)))]))
 ;(substitute "123" "456" '("list" "123" "list" "123" "123"))
+
+(define (legal? list)
+  (cond
+    [(and (< 0 (LOC-x (car list)) 100) (< 0 (LOC-y (car list)) 200))
+     (cons  (car list) (legal (cdr list)))]
+    [else (legal (cdr list))]))
+
+(define (legal list)
+  (cond
+    [(empty? list) '()]
+    [else (legal? list)]))
+#|(legal (cons (make-LOC 1 100)
+             (cons (make-LOC 50 100)
+                   (cons (make-LOC 60 300) '()))))
+|#
+
+(define (check-phone num)
+  (cond
+    [(= (phone-area num) 713) (make-phone 281 (phone-switch num) (phone-four num))]
+    [else num]))
+(define (replace list)
+  (cond
+    [(empty? list) empty]
+    [else (cons (check-phone (car list)) (replace (cdr list)))]))
+;(phone-area (car (replace (cons (make-phone 713 1234 5678)
+;(cons (make-phone 913 1234 5678) '())))))
+
+(define-struct line-string [line rest])
+(define-struct words-string [word rest])
+(define-struct line-words-string [wl rest])
+
+(define input (read-file "ttt.txt"))
+(define input-line (read-lines "ttt.txt"))
+(define input-words (read-words "ttt.txt"))
+(define input-wl (read-words/line "ttt.txt"))
+
+(define (line-convert input)
+  (cond
+    [(empty? input) '()]
+    [else (make-line-string (car input) (line-convert (cdr input)))]))
+#|(line-string-line (line-convert (read-lines "ttt.txt")))
+(line-string-rest (line-convert (read-lines "ttt.txt")))
+(read-lines "ttt.txt")
+|#
+
+(define (word-convert input)
+  (cond
+    [(empty? input) '()]
+    [else (make-words-string (car input) (word-convert (cdr input)))]))
+#|(words-string-word (word-convert (read-words "ttt.txt")))
+(words-string-rest (word-convert (read-words "ttt.txt")))
+(read-words "ttt.txt")
+|#
+
+(define (wl-convert input)
+  (cond
+    [(empty? input) '()]
+    [else
+     (make-line-words-string (word-convert (car input)) (wl-convert (cdr input)))]))
+#|
+(words-string-word (line-words-string-wl (wl-convert input-wl)))
+(line-words-string-rest (wl-convert input-wl))
+(read-words/line "ttt.txt")
+|#
+
+(define line0 (cons "hello" (cons "world" '())))
+(define line1 '())
+ 
+(define lls0 '())
+(define lls1 (cons line0 (cons line1 '())))
+
+(define (words-on-line lls)
+  (cond
+    [(empty? lls) '()]
+    [else (cons (length (first lls))
+                (words-on-line (rest lls)))]))
+;(words-on-line lls0)
+(words-on-line lls1)
