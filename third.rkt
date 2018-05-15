@@ -240,4 +240,72 @@
     [else (cons (length (first lls))
                 (words-on-line (rest lls)))]))
 ;(words-on-line lls0)
-(words-on-line lls1)
+;(words-on-line lls1)
+
+; String -> List-of-numbers
+; counts the words on each line in the given file
+(define (file-statistic file-name)
+  (words-on-line
+    (read-words/line file-name)))
+;(file-statistic "ttt.txt")
+
+(define (collapse input)
+  (cond
+    [(empty? input) ""]
+    [else (string-append (tostring (car input)) "\n" (collapse (cdr input)))]))
+(define (tostring list)
+  (cond
+    [(empty? list) ""]
+    [else (string-append (car list)  " " (tostring (cdr list)))]))
+;(collapse (read-words/line "ttt.txt"))
+
+(define (remove-articles input)
+  (cond
+    [(empty? input) ""]
+    [else (string-append (remove (car input)) "\n" (remove-articles (cdr input)))]))
+(define (remove list)
+  (cond
+    [(empty? list) ""]
+    [(or (string=? "a"  (car list))
+         (string=? "an" (car list))
+         (string=? "the" (car list))) (remove (cdr list))]
+    [else (string-append (car list)  " " (remove (cdr list)))]))
+;(write-file "ttt.dat" (remove-articles (read-words/line "ttt.txt")))
+
+; 1String -> String
+; converts the given 1String into a String
+(define (code1 c)
+  (number->string (char->integer c)))
+;(code1 "A")
+
+; 1String -> String
+; converts the given 1String to a 3-letter numeric String
+(define (encode-letter s)
+  (cond
+    [(>= (char->integer s) 100) (code1 s)]
+    [(> 10 (char->integer s)) (string-append "00" (code1 s))]
+    [(> 100 (char->integer s)) (string-append "0" (code1 s))]))
+
+(define (encode-string list)
+  (cond
+    [(empty? (cdr list)) (encode-letter (car list))]
+    [else (string-append (encode-letter (car list)) (encode-string (cdr list)))]))
+
+(define (encode-file input)
+  (cond
+    [(empty? input) ""]
+    [else (string-append (encode-line (car input))
+                         "\n"
+                         (encode-file (cdr input)))]))
+(define (encode-line list)
+  (cond
+    [(empty? list) ""]
+    [else (string-append (encode-string (string->list (car list)))  " " (encode-line (cdr list)))]))
+;(write-file "ttt.dat" (encode-file (read-words/line "ttt.txt")))
+
+(define (wc1 input)
+  (cond
+    [(empty? input) '()]
+    [else (string-append "words:" (word-num input)
+                         "lines:" (line-num input)
+                         "bytes:" (byte-num input))]))
