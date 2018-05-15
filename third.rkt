@@ -303,9 +303,79 @@
     [else (string-append (encode-string (string->list (car list)))  " " (encode-line (cdr list)))]))
 ;(write-file "ttt.dat" (encode-file (read-words/line "ttt.txt")))
 
+(define (word-num list)
+  (cond
+    [(empty? list) 0]
+    [else (+ (length (car list)) (word-num (cdr list)))]))
+
+(define (line-num list)
+  (length list))
+
+(define (byte-count list)
+  (cond
+    [(empty? list) 0]
+    [else (+ (string-length (car list)) (byte-count (cdr list)))]))
+
+(define (byte-num list)
+  (cond
+    [(empty? list) 0]
+    [else (+ (byte-count (car list)) (byte-num (cdr list)))]))
+
 (define (wc1 input)
   (cond
     [(empty? input) '()]
-    [else (string-append "words:" (word-num input)
-                         "lines:" (line-num input)
-                         "bytes:" (byte-num input))]))
+    [else (string-append "words:" (number->string (word-num input))
+                         "lines:" (number->string (line-num input))
+                         "bytes:" (number->string (byte-num input)))]))
+;(wc1 (read-words/line "ttt.txt"))
+
+; Matrix -> Matrix
+; transposes the given matrix along the diagonal 
+(define wor1 (cons 11 (cons 21 '())))
+(define wor2 (cons 12 (cons 22 '())))
+(define tam1 (cons wor1 (cons wor2 '())))
+
+(define row1 (cons 11 (cons 12 '())))
+(define row2 (cons 21 (cons 22 '())))
+(define mat1 (cons row1 (cons row2 '())))
+
+(define (transpose lln)
+  (cond
+    [(or (empty? (car lln)) (empty? lln)) '()]
+    [else (cons (first* lln) (transpose (rest* lln)))]))
+
+(define (first* lln)
+  (cond
+    [(empty? lln) '()]
+    [else (cons (car (car lln)) (first* (cdr lln)))]))
+
+(define (rest* lln)
+  (cond
+    [(empty? lln) '()]
+    [else (cons (cdr (car lln)) (rest* (cdr lln)))]))
+;(transpose '((11 12 13) (21 22 23) (31 32 33)))
+;(transpose mat1)
+
+(define (rev1 l)
+  (cond
+    [(empty? l) '()]
+    [else (rever (rev1 (cdr l)) (car l))]))
+
+(define (rever l s)
+  (cond
+    [(empty? l) (cons s '())]
+    [else (cons (car l) (rever (cdr l) s))]))
+
+(define (rev l)
+  (cond
+    [(empty? l) '()]
+    [else (add-at-end (rev (rest l)) (first l))]))
+
+(define (add-at-end l s)
+  (cond
+    [(empty? l) (cons s '())]
+    [else
+     (cons (first l) (add-at-end (rest l) s))]))
+
+(rev (cons "a" (cons "b" (cons "c" (cons "d" '())))))
+(rev1 (cons "c" (cons "d" '())))
