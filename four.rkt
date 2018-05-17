@@ -198,3 +198,15 @@
     [else (or (= (first alon) n)
               (search-sort n (rest alon)))]))
 ;(search-sort 9.5 (sort> (list 9 8 7 6 4 3 2 1 10 5)))
+
+(define (prefixes list)
+  (cond
+    [(empty? list) '()]
+    [else (cons (reverse list) (prefixes (cdr list)))]))
+(prefixes (reverse (list 9 8 7)))
+
+(define (suffixes list)
+  (cond
+    [(empty? list) '()]
+    [else (cons list (suffixes (cdr list)))]))
+(suffixes (list 9 8 7))
