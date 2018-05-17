@@ -356,26 +356,39 @@
 ;(transpose '((11 12 13) (21 22 23) (31 32 33)))
 ;(transpose mat1)
 
-(define (rev1 l)
+(define (trans list)
   (cond
-    [(empty? l) '()]
-    [else (rever (rev1 (cdr l)) (car l))]))
+    [(or (empty? list) (empty? (car list))) '()]
+    [else (cons (first-line list) (trans (rest-line list)))]))
 
-(define (rever l s)
+(define (rest-line list)
   (cond
-    [(empty? l) (cons s '())]
-    [else (cons (car l) (rever (cdr l) s))]))
+    [(empty? list) '()]
+    [else (cons (cdr (car list)) (rest-line (cdr list)))]))
 
-(define (rev l)
+(define (first-line list)
   (cond
-    [(empty? l) '()]
-    [else (add-at-end (rev (rest l)) (first l))]))
+   [(empty? list) '()]
+   [else (cons (car (car list)) (first-line (cdr list)))]))
+;(trans '((11 12 13) (21 22 23) (31 32 33)))
+;(trans '())
 
-(define (add-at-end l s)
+; list str -> list
+; create a new list by adding str to the end of list 
+(define (cons.v2 list str)
   (cond
-    [(empty? l) (cons s '())]
-    [else
-     (cons (first l) (add-at-end (rest l) s))]))
+    [(empty? list) (cons str '())]
+    [else (cons (car list) (cons.v2 (cdr list) str))]))
+;(cons.v2 '() "str")
+;(cons.v2 '("123" "456") "str")
 
-(rev (cons "a" (cons "b" (cons "c" (cons "d" '())))))
-(rev1 (cons "c" (cons "d" '())))
+; los -> los
+; produce a reverse version of the given list
+(define (rev list)
+  (cond
+    [(empty? list) '()]
+    [else (cons.v2 (rev (cdr list)) (car list))]))
+;(rev '(1 2 3 4 5))
+;(reverse '(1 2 3 4 5))
+;(rev '())
+;(rev '(1))
