@@ -63,6 +63,12 @@
 ;(editor-post (editor-ins (make-editor '("1") '("2" "3" "4")) (circle 10 "solid" "red")))
 
 ; Editor KeyEvent -> Editor
+; press shift to insert the circle between pre and post
+(define (editor-add-pic ed)
+  (make-editor (reverse (cons (circle 5 "solid" "red") (reverse (editor-pre ed))))
+               (editor-post ed)))
+
+; Editor KeyEvent -> Editor
 ; deals with a key event, given an editor
 (define (editor-kh ed ke)
   (cond
@@ -71,6 +77,7 @@
     [(key=? ke "left") (editor-lft ed)]
     [(key=? ke "\r") ed]
     [(key=? ke "\t") ed]
+    [(key=? ke "shift") (editor-add-pic ed)]
     [(= (string-length ke) 1) (editor-ins ed ke)]
     [else ed]))
 
@@ -101,8 +108,18 @@
   (big-bang (create-editor s "")
     [on-key editor-kh]
     [to-draw editor-render]))
-(main "")
-;(main (circle 10 "solid" "red"))
+;(main ">")
+
 ;(define x 'a)
 ;(list (quote quote) x)
 ;(cons (quote quote) (cons 'a '()))
+;(equal? (list 0 1) (cons 0 '(1)))
+;(fourth (list 1 2 4 3))
+
+; list-of-number -> list-of-number
+; rearranges alon in descending order
+; produces a sorted version of alon
+(define (sort> alon) alon)
+
+(equal? (sort> '()) '())
+(equal? (sort> '(1 2 3)) '(3 2 1))
