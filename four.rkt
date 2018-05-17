@@ -1,5 +1,5 @@
 #lang racket
-;(require lang/htdp-advanced)
+;(require )
 (require 2htdp/universe)
 (require 2htdp/image)
 (require 2htdp/batch-io)
@@ -116,10 +116,85 @@
 ;(equal? (list 0 1) (cons 0 '(1)))
 ;(fourth (list 1 2 4 3))
 
+; number list-of-numbers -> list-of-numbers
+; insert n into the sorted list of numbers alon
+(define (insert n alon)
+  (cond
+    [(empty? alon) (cons n alon)]
+    [(<= (car alon) n) (cons n alon)]
+    [else (cons (car alon) (insert n (cdr alon)))]))
+
 ; list-of-number -> list-of-number
 ; rearranges alon in descending order
 ; produces a sorted version of alon
-(define (sort> alon) alon)
+(define (sort> alon)
+  (cond
+    [(empty? alon) '()]
+    [(list? alon) (insert (car alon) (sort> (cdr alon)))]
+    [else (error "alon is not list")]))
 
-(equal? (sort> '()) '())
-(equal? (sort> '(1 2 3)) '(3 2 1))
+; list-of-number -> boolean
+; judge alon is descending order or not
+(define (sorted>? alon)
+  (cond
+    [(or (empty? alon) (empty? (cdr alon))) #t]
+    [else (and (> (car alon) (car (cdr alon)))
+               (sorted>? (cdr alon)))]))
+
+;(check-satisfied (sort> (list 9 8 7 6 4 3 2 1 0 5))  sorted>?)
+
+; A GamePlayer is a structure:
+; (make-gp String Number)
+; interpretation (make-gp p s) represents player p who
+; scored a maximum of s points
+(define-struct gp [name score])
+
+(define (insert-player player list)
+  (cond
+    [(empty? list) (cons player '())]
+    [(>= (gp-score player) (gp-score (car list))) (cons player list)]
+    [else (cons (car list) (insert-player player (cdr list)))]))
+
+(define (game-score> list)
+  (cond
+    [(empty? list) '()]
+    [else (insert-player (car list) (game-score> (cdr list)))]))
+
+(define (game-score>? list)
+  (cond
+    [(or (empty? list) (empty? (cdr list))) #t]
+    [else (and (> (gp-score (car list)) (gp-score (car (cdr list))))
+               (game-score>? (cdr list)))]))
+
+;(check-satisfied (game-score> (list (make-gp "jack" 50) (make-gp "lily" 40)
+;                                    (make-gp "tom" 60) (make-gp "linda" 80)))  game-score>?)
+
+(define-struct email [from date message])
+
+(define (insert-email email list)
+  (cond
+    [(empty? list) (cons email '())]
+    [(string<? (email-from email) (email-from (car list))) (cons email list)]
+    [else (cons (car list) (insert-email email (cdr list)))]))
+
+(define (email-sort> list)
+  (cond
+    [(empty? list) '()]
+    [else (insert-email (car list) (email-sort> (cdr list)))]))
+
+(define (email-sort>? list)
+  (cond
+    [(or (empty? list) (empty? (cdr list))) #t]
+    [else (and (string<? (email-from (car list)) (email-from (car (cdr list))))
+               (email-sort>? (cdr list)))]))
+;(check-satisfied (email-sort> (list (make-email "yinda" 50 100) (make-email "lily" 40 300)
+;                                    (make-email "tom" 60 200) (make-email "jack" 80 400)))  email-sort>?)
+
+; Number List-of-numbers -> Boolean
+(define (search-sort n alon)
+  (cond
+    [(empty? alon) #f]
+    [(< (first alon) n) #f]
+    [else (or (= (first alon) n)
+              (search-sort n (rest alon)))]))
+;(search-sort 9.5 (sort> (list 9 8 7 6 4 3 2 1 10 5)))
