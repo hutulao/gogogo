@@ -1,4 +1,7 @@
-#lang racket
+;; The first three lines of this file were inserted by DrRacket. They record metadata
+;; about the language level of this file in a form that our tools can easily process.
+#reader(lib "htdp-beginner-abbr-reader.ss" "lang")((modname four) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
+;#lang racket
 ;(require )
 (require 2htdp/universe)
 (require 2htdp/image)
@@ -203,10 +206,60 @@
   (cond
     [(empty? list) '()]
     [else (cons (reverse list) (prefixes (cdr list)))]))
-(prefixes (reverse (list 9 8 7)))
+;(prefixes (reverse (list 9 8 7)))
 
 (define (suffixes list)
   (cond
     [(empty? list) '()]
     [else (cons list (suffixes (cdr list)))]))
-(suffixes (list 9 8 7))
+;(suffixes (list 9 8 7))
+
+; a Polygon is one of: 
+; – (cons Posn (cons Posn (cons Posn '()))) 
+; – (cons Posn Polygon)
+
+; a plain background image 
+(define MT.v1 (empty-scene 50 50))
+ 
+; Image Polygon -> Image
+; renders the given polygon p into img
+(define (render-poly img p)
+  (cond
+    [(empty? (rest (rest (rest p))))
+     (render-line
+       (render-line
+         (render-line MT.v1 (first p) (second p))
+         (second p) (third p))
+       (third p) (first p))]
+    [else
+     (render-line (render-poly img (rest p))
+                  (first p)
+                  (second p))]))
+
+; Image Posn Posn -> Image 
+; renders a line from p to q into img
+(define (render-line img p q)
+  (scene+line
+    img
+    (posn-x p) (posn-y p) (posn-x q) (posn-y q)
+    "red"))
+(check-expect (render-line MT.v1 (make-posn 20 10) (make-posn 20 20))
+ (scene+line MT.v1
+             (posn-x (make-posn 20 10)) (posn-y (make-posn 20 10))
+             (posn-x (make-posn 20 20)) (posn-y (make-posn 20 20))
+             "red"))
+
+(define triangle-p
+  (list
+    (make-posn 20 10)
+    (make-posn 20 20)
+    (make-posn 30 20)))
+		
+(define square-p
+  (list
+    (make-posn 10 10)
+    (make-posn 20 10)
+    (make-posn 20 20)
+    (make-posn 10 20)))
+
+(render-poly MT.v1 square-p)
