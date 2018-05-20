@@ -1,11 +1,9 @@
-;; The first three lines of this file were inserted by DrRacket. They record metadata
-;; about the language level of this file in a form that our tools can easily process.
-#reader(lib "htdp-beginner-abbr-reader.ss" "lang")((modname four) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
-;#lang racket
+#lang racket
 ;(require )
 (require 2htdp/universe)
 (require 2htdp/image)
 (require 2htdp/batch-io)
+(require 2htdp/itunes)
 
 ; constant
 (define HEIGHT 20) ; the height of the editor
@@ -219,47 +217,193 @@
 ; – (cons Posn Polygon)
 
 ; a plain background image 
-(define MT.v1 (empty-scene 50 50))
- 
-; Image Polygon -> Image
-; renders the given polygon p into img
-(define (render-poly img p)
-  (cond
-    [(empty? (rest (rest (rest p))))
-     (render-line
-       (render-line
-         (render-line MT.v1 (first p) (second p))
-         (second p) (third p))
-       (third p) (first p))]
-    [else
-     (render-line (render-poly img (rest p))
-                  (first p)
-                  (second p))]))
+(define BGMT (empty-scene 50 50))
+(define-struct point [x y])
 
 ; Image Posn Posn -> Image 
 ; renders a line from p to q into img
 (define (render-line img p q)
   (scene+line
-    img
-    (posn-x p) (posn-y p) (posn-x q) (posn-y q)
-    "red"))
-(check-expect (render-line MT.v1 (make-posn 20 10) (make-posn 20 20))
- (scene+line MT.v1
-             (posn-x (make-posn 20 10)) (posn-y (make-posn 20 10))
-             (posn-x (make-posn 20 20)) (posn-y (make-posn 20 20))
-             "red"))
+   img
+   (point-x p) (point-y p) (point-x q) (point-y q)
+   "red"))
+;(check-expect (render-line BGMT (make-posn 20 10) (make-posn 20 20))
+; (scene+line BGMT
+;             (posn-x (make-posn 20 10)) (posn-y (make-posn 20 10))
+;             (posn-x (make-posn 20 20)) (posn-y (make-posn 20 20))
+;             "red"))
 
 (define triangle-p
   (list
-    (make-posn 20 10)
-    (make-posn 20 20)
-    (make-posn 30 20)))
+    (make-point 20 10)
+    (make-point 20 20)
+    (make-point 30 20)))
 		
 (define square-p
   (list
-    (make-posn 10 10)
-    (make-posn 20 10)
-    (make-posn 20 20)
-    (make-posn 10 20)))
+    (make-point 10 10)
+    (make-point 20 10)
+    (make-point 20 20)
+    (make-point 10 20)))
 
-(render-poly MT.v1 square-p)
+; Image Polygon -> Image 
+; adds an image of p to img
+(define (connet-dots img lod)
+  (cond
+    [(empty? (cdr lod)) img]
+    [else
+     (render-line (connet-dots img (cdr lod))
+                 (first lod) (second lod))]))
+
+; Image Polygon -> Image
+; renders the given polygon p into img
+(define (render-poly img p)
+  (render-line (connet-dots img p) (car p) (car (reverse p))))
+
+(define (render-poly.v1 img p)
+  (connet-dots img (reverse (cons (car p) (reverse p)))))
+(define (render-poly.v2 img p)
+  (connet-dots img (cons (car (reverse p)) p)))
+
+;(equal? (render-poly BGMT square-p) (render-poly.v1 BGMT square-p))
+;(equal? (render-poly BGMT triangle-p) (render-poly.v2 BGMT triangle-p))
+
+(define LOCATION "/usr/share/dict/words")
+
+; A Dictionary is a list-of strings
+(define AS-LIST (read-lines LOCATION))
+
+(define (charlist->stringlist list)
+  (cond
+    [(empty? list) '()]
+    [else (cons (string (car list)) (charlist->stringlist (cdr list)))]))
+
+; A Letter is one of the following 1Strings: 
+; – "a"
+; – ... 
+; – "z"
+; or, equivalently, a member? of this list: 
+(define LETTERS
+  (charlist->stringlist (string->list "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")))
+
+(define (start-with# letter los)
+  (cond
+    [(empty? los) 0]
+    [(string>? (car (charlist->stringlist (string->list (car los)))) letter) 0]
+    [(string<? (car (charlist->stringlist (string->list (car los)))) letter) (start-with# letter (cdr los))]
+    [else (+ 1 (start-with# letter (cdr los)))]))
+;(start-with# "B" AS-LIST)
+(define-struct  Letter-Counts [letter counts])
+(define (count-by-letter lol los)
+  (cond
+    [(empty? lol) '()]
+    [else (cons (start-with# (car lol) los) (count-by-letter (cdr lol) los))]))
+;(count-by-letter LETTERS AS-LIST)
+(define (sum list)
+  (cond
+    [(empty? list) 0]
+    [else (+ (car list) (sum (cdr list)))]))
+;(sum (count-by-letter LETTERS AS-LIST))
+
+
+; An LTracks is one of:
+; – '()
+; – (cons Track LTracks)
+ 
+;(define-struct track
+;  [name artist album time track# added play# played])
+; A Track is a structure:
+;   (make-track String String String N N Date N Date)
+; interpretation An instance records in order: the track's 
+; title, its producing artist, to which album it belongs, 
+; its playing time in milliseconds, its position within the 
+; album, the date it was added, how often it has been 
+; played, and the date when it was last played
+ 
+;(define-struct date [year month day hour minute second])
+; A Date is a structure:
+;   (make-date N N N N N N)
+; interpretation An instance records six pieces of information:
+; the date's year, month (between 1 and 12 inclusive), 
+; day (between 1 and 31), hour (between 0 
+; and 23), minute (between 0 and 59), and 
+; second (also between 0 and 59).
+
+; Any Any Any Any Any Any Any Any -> Track or #false
+; creates an instance of Track for legitimate inputs
+; otherwise it produces #false
+;(define (create-track name artist album time track# added play# played)
+;  (make-track name artist album time track# added play# played))
+ 
+; Any Any Any Any Any Any -> Date or #false
+; creates an instance of Date for legitimate inputs 
+; otherwise it produces #false
+;(define (create-date y mo day h m s)
+;  (make-date y mo day h m s))
+ 
+; String -> LTracks
+; creates a list-of-tracks representation from the
+; text in file-name (an XML export from iTunes)
+;(define (read-itunes-as-tracks file-name)
+;  ...)
+
+; modify the following to use your chosen name
+(define ITUNES-LOCATION "itunes.xml")
+ 
+; LTracks
+(define itunes-tracks
+  (read-itunes-as-tracks ITUNES-LOCATION))
+itunes-tracks
+(define (total-time list)
+  (cond
+    [(empty? list) 0]
+    [else (+ (track-time (car list)) (total-time (cdr list)))]))
+;(total-time itunes-tracks)
+(define (select-all-album-titles list)
+  (cond
+    [(empty? list) '()]
+    [else (cons (track-album(car list)) (select-all-album-titles (cdr list)))]))
+;(select-all-album-titles itunes-tracks)
+
+
+(define (create-set-once los)
+  (cond
+    [(empty? los) '()]
+    [(empty? (cdr los)) los]
+    [(string=? (car los) (second los)) (create-set-once (cons (car los) (cdr (cdr los))))]
+    [else (cons (car los ) (create-set-once (cdr los)))]))
+
+; string list-of-strings -> list-of-strings
+; insert str into the sorted list of strings list
+(define (insert-los> str list)
+  (cond
+    [(empty? list) (cons str list)]
+    [(string>? str (car list)) (cons str list)]
+    [else (cons (car list) (insert-los> str (cdr list)))]))
+
+; list-of-string -> list-of-string
+; rearranges los in descending order
+; produces a sorted version of los
+(define (sortstr> los)
+  (cond
+    [(empty? los) '()]
+    [(empty? (cdr los)) los]
+    [else (insert-los> (car los) (sortstr> (cdr los)))]))
+
+
+(create-set-once (sortstr> '("los" "xos" "os" "xos" "alos" "os")))
+
+(define (insert-str str list)
+  (cond
+    [(empty? list) (cons str list)]
+    [(string=? (car list) str) list]
+    [else (cons (car list) (insert-str str (cdr list)))]))
+;(insert-str "e" '("d" "b" "c" "a"))
+;(insert-str "c" '("d" "b" "c" "a"))
+
+(define (get-once-list alos)
+  (cond
+    [(empty? alos) '()]
+    [else (insert-str (car alos) (get-once-list (cdr alos)))]))
+;(get-once-list (reverse '("a" "d" "c" "d" "b" "f" "a" "b")))
+;(get-once-list '("a" "d" "c"))
