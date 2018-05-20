@@ -353,7 +353,7 @@
 ; LTracks
 (define itunes-tracks
   (read-itunes-as-tracks ITUNES-LOCATION))
-itunes-tracks
+;itunes-tracks
 (define (total-time list)
   (cond
     [(empty? list) 0]
@@ -364,7 +364,6 @@ itunes-tracks
     [(empty? list) '()]
     [else (cons (track-album(car list)) (select-all-album-titles (cdr list)))]))
 ;(select-all-album-titles itunes-tracks)
-
 
 (define (create-set-once los)
   (cond
@@ -389,9 +388,7 @@ itunes-tracks
     [(empty? los) '()]
     [(empty? (cdr los)) los]
     [else (insert-los> (car los) (sortstr> (cdr los)))]))
-
-
-(create-set-once (sortstr> '("los" "xos" "os" "xos" "alos" "os")))
+;(create-set-once (sortstr> '("los" "xos" "os" "xos" "alos" "os")))
 
 (define (insert-str str list)
   (cond
