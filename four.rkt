@@ -284,13 +284,15 @@
 ; – "z"
 ; or, equivalently, a member? of this list: 
 (define LETTERS
-  (charlist->stringlist (string->list "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")))
+  (charlist->stringlist (string->list
+                         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")))
 
 (define (start-with# letter los)
   (cond
     [(empty? los) 0]
     [(string>? (car (charlist->stringlist (string->list (car los)))) letter) 0]
-    [(string<? (car (charlist->stringlist (string->list (car los)))) letter) (start-with# letter (cdr los))]
+    [(string<? (car (charlist->stringlist (string->list (car los)))) letter)
+     (start-with# letter (cdr los))]
     [else (+ 1 (start-with# letter (cdr los)))]))
 ;(start-with# "B" AS-LIST)
 (define-struct  Letter-Counts [letter counts])
@@ -338,8 +340,8 @@
 ; Any Any Any Any Any Any -> Date or #false
 ; creates an instance of Date for legitimate inputs 
 ; otherwise it produces #false
-;(define (create-date y mo day h m s)
-;  (make-date y mo day h m s))
+(define (create-date y mo day h m s)
+  (make-date y mo day h m s))
  
 ; String -> LTracks
 ; creates a list-of-tracks representation from the
@@ -353,7 +355,7 @@
 ; LTracks
 (define itunes-tracks
   (read-itunes-as-tracks ITUNES-LOCATION))
-;itunes-tracks
+itunes-tracks
 (define (total-time list)
   (cond
     [(empty? list) 0]
@@ -362,7 +364,7 @@
 (define (select-all-album-titles list)
   (cond
     [(empty? list) '()]
-    [else (cons (track-album(car list)) (select-all-album-titles (cdr list)))]))
+    [else (cons (track-album (car list)) (select-all-album-titles (cdr list)))]))
 ;(select-all-album-titles itunes-tracks)
 
 (define (create-set-once los)
@@ -404,3 +406,33 @@
     [else (insert-str (car alos) (get-once-list (cdr alos)))]))
 ;(get-once-list (reverse '("a" "d" "c" "d" "b" "f" "a" "b")))
 ;(get-once-list '("a" "d" "c"))
+
+(define select-album-titles/unique
+  (create-set-once (sortstr> (select-all-album-titles itunes-tracks))))
+
+(define (select-album str list)
+  (cond
+    [(empty? list) '()]
+    [(string=? str (track-album (car list)))
+     (cons (car list) (select-album str (cdr list)))]
+    [else (select-album str (cdr list))]))
+;(select-album "Day Without Rain" itunes-tracks)
+
+
+(define (date-compare played date)
+  (and (> (date-year played) (date-year date))
+       (> (date-month played) (date-month date))
+       [> (date-day played) (date-day date)]
+       [> (date-hour played) (date-hour date)]
+       [> (date-minute played) (date-minute date)]
+       [> (date-second played) (date-second date)]))
+
+(define (select-album-date album date list)
+  (cond
+    [(empty? list) '()]
+    [(empty? list) '()]
+    [(and (string=? album (track-album (car list))) (date-compare (track-played (car list)) date))
+     (cons (car list) (select-album-date album date (cdr list)))]
+    [else (select-album-date album date (cdr list))]))
+
+(select-album-date "A Day Without Rain" (date 2011 5 17 17 38 41) itunes-tracks)
