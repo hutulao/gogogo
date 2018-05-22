@@ -340,8 +340,8 @@
 ; Any Any Any Any Any Any -> Date or #false
 ; creates an instance of Date for legitimate inputs 
 ; otherwise it produces #false
-(define (create-date y mo day h m s)
-  (make-date y mo day h m s))
+;(define (create-date y mo day h m s)
+;  (make-date y mo day h m s))
  
 ; String -> LTracks
 ; creates a list-of-tracks representation from the
@@ -355,7 +355,7 @@
 ; LTracks
 (define itunes-tracks
   (read-itunes-as-tracks ITUNES-LOCATION))
-itunes-tracks
+;itunes-tracks
 (define (total-time list)
   (cond
     [(empty? list) 0]
@@ -427,12 +427,31 @@ itunes-tracks
        [> (date-minute played) (date-minute date)]
        [> (date-second played) (date-second date)]))
 
-(define (select-album-date album date list)
+#|(define (select-album-date album date list)
   (cond
     [(empty? list) '()]
     [(empty? list) '()]
     [(and (string=? album (track-album (car list))) (date-compare (track-played (car list)) date))
      (cons (car list) (select-album-date album date (cdr list)))]
     [else (select-album-date album date (cdr list))]))
-
 (select-album-date "A Day Without Rain" (date 2011 5 17 17 38 41) itunes-tracks)
+|#
+
+; LLists
+(define list-tracks
+  (read-itunes-as-lists ITUNES-LOCATION))
+list-tracks
+;(car list-tracks)
+(define (find-association key lassoc default)
+  (cond
+    [(empty? lassoc) "default"]
+    [(string=? (car (car lassoc)) key) (second (car lassoc))]
+    [else (find-association key (cdr lassoc) default)]))
+
+;(find-association "Artist " (car list-tracks) "default")
+
+(define (total-time/list llist)
+  (cond
+    [(empty? llist) 0]
+    [else (+ (find-association "Total Time" (car llist) 0) (total-time/list (cdr llist)))]))
+(total-time/list list-tracks)
