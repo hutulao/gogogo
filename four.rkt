@@ -440,7 +440,7 @@
 ; LLists
 (define list-tracks
   (read-itunes-as-lists ITUNES-LOCATION))
-list-tracks
+;list-tracks
 ;(car list-tracks)
 (define (find-association key lassoc default)
   (cond
@@ -454,4 +454,58 @@ list-tracks
   (cond
     [(empty? llist) 0]
     [else (+ (find-association "Total Time" (car llist) 0) (total-time/list (cdr llist)))]))
-(total-time/list list-tracks)
+;(total-time/list list-tracks)
+
+(define (member? str list)
+  (list? (member str list)))
+; List-of-strings -> Boolean
+(define (all-words-from-rat? w)
+  (and
+    (member? "rat" w) (member? "art" w) (member? "tar" w)))
+ 
+; String -> List-of-strings
+; finds all words that the letters of some given word spell
+  
+;(check-satisfied (alternative-words "rat") all-words-from-rat?)
+ 
+(define (alternative-words s)
+  (in-dictionary
+    (words->strings (arrangements (string->word s)))))
+
+(define (insert-into-list str lol)
+  (cond
+    [(empty? lol) (list (cons str lol))]
+    [else '()]))
+
+(define (insert-everywhere/in-all-words str lol)
+  (cond
+    [(empty? (cdr lol)) (insert-into-list str (car lol))]
+    [else (append (insert-into-list str (car lol))
+                  (insert-everywhere/in-all-words str (cdr lol)))]))
+(insert-everywhere/in-all-words "C" '(("D")))
+(define (arrangements list)
+  (cond
+    [(empty? list) '(())]
+    [else (insert-everywhere/in-all-words
+           (car list)
+           (arrangements (cdr list)))]))
+(arrangements '(D))
+; List-of-words -> List-of-strings
+; turns all Words in low into Strings 
+(define (words->strings low)
+  '())
+ 
+; List-of-strings -> List-of-strings
+; picks out all those Strings that occur in the dictionary 
+(define (in-dictionary los) '());(index "in-dictionary")
+
+; String -> Word
+; converts s to the chosen word representation 
+(define (string->word s)
+  (charlist->stringlist
+   (string->list s)))
+     
+; Word -> String
+; converts w to a string
+(define (word->string w)
+  (string->list w))
