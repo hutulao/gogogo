@@ -474,22 +474,33 @@
 
 (define (insert-into-list str lol)
   (cond
-    [(empty? lol) (list (cons str lol))]
-    [else '()]))
+    [(empty? lol) '()]
+    [(= (length lol) 1) (append (list (cons str lol)) (list (reverse (cons str (reverse lol)))))]
+    [(= (length lol) 2) (append (list (cons str lol))
+                                (list (cons (car lol) (cons str (cdr lol))))
+                                (list (reverse (cons str (reverse lol)))))]
+    [else (append (list (cons str lol))
+                  (insert-into-list str (cdr lol))
+                  (list (reverse (cons str (reverse lol)))))]))
+(insert-into-list "C" '("D"))
+(insert-into-list "C" '("A" "B"))
 
 (define (insert-everywhere/in-all-words str lol)
   (cond
-    [(empty? (cdr lol)) (insert-into-list str (car lol))]
+    [(empty? (cdr lol)) (cons str (car lol))]
     [else (append (insert-into-list str (car lol))
                   (insert-everywhere/in-all-words str (cdr lol)))]))
+
+(insert-everywhere/in-all-words "C" '(()))
 (insert-everywhere/in-all-words "C" '(("D")))
+
 (define (arrangements list)
   (cond
-    [(empty? list) '(())]
+    [(empty? list) (list '())]
     [else (insert-everywhere/in-all-words
            (car list)
            (arrangements (cdr list)))]))
-(arrangements '(D))
+;(arrangements '(D))
 ; List-of-words -> List-of-strings
 ; turns all Words in low into Strings 
 (define (words->strings low)
