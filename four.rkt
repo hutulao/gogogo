@@ -475,7 +475,8 @@
 (define (insert-into-list str lol)
   (cond
     [(empty? lol) '()]
-    [(= (length lol) 1) (append (list (cons str lol)) (list (reverse (cons str (reverse lol)))))]
+    [(= (length lol) 1) (append (list (cons str lol))
+                                (list (reverse (cons str (reverse lol)))))]
     [(= (length lol) 2) (append (list (cons str lol))
                                 (list (cons (car lol) (cons str (cdr lol))))
                                 (list (reverse (cons str (reverse lol)))))]
@@ -487,20 +488,24 @@
 
 (define (insert-everywhere/in-all-words str lol)
   (cond
-    [(empty? (cdr lol)) (cons str (car lol))]
+    ;[(empty? lol) (list (cons str lol))]
+    [(empty? lol) '()]
     [else (append (insert-into-list str (car lol))
                   (insert-everywhere/in-all-words str (cdr lol)))]))
 
 (insert-everywhere/in-all-words "C" '(()))
 (insert-everywhere/in-all-words "C" '(("D")))
 
-(define (arrangements list)
+; Word -> List-of-words
+; creates all rearrangements of the letters in w
+(define (arrangements w)
   (cond
-    [(empty? list) (list '())]
+    [(empty? w) (list '())]
     [else (insert-everywhere/in-all-words
-           (car list)
-           (arrangements (cdr list)))]))
-;(arrangements '(D))
+           (car w)
+           (arrangements (cdr w)))]))
+
+(arrangements '(C D))
 ; List-of-words -> List-of-strings
 ; turns all Words in low into Strings 
 (define (words->strings low)
