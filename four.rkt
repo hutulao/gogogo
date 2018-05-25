@@ -462,39 +462,27 @@
 (define (all-words-from-rat? w)
   (and
     (member? "rat" w) (member? "art" w) (member? "tar" w)))
- 
-; String -> List-of-strings
-; finds all words that the letters of some given word spell
-  
-;(check-satisfied (alternative-words "rat") all-words-from-rat?)
- 
-(define (alternative-words s)
-  (in-dictionary
-    (words->strings (arrangements (string->word s)))))
 
-(define (insert-into-list str lol)
+(define (insert-into-list rev-pre post)
   (cond
-    [(empty? lol) '()]
-    [(= (length lol) 1) (append (list (cons str lol))
-                                (list (reverse (cons str (reverse lol)))))]
-    [(= (length lol) 2) (append (list (cons str lol))
-                                (list (cons (car lol) (cons str (cdr lol))))
-                                (list (reverse (cons str (reverse lol)))))]
-    [else (append (list (cons str lol))
-                  (insert-into-list str (cdr lol))
-                  (list (reverse (cons str (reverse lol)))))]))
-(insert-into-list "C" '("D"))
-(insert-into-list "C" '("A" "B"))
+    [(empty? post) (list (reverse rev-pre))]
+    [else (append (list (append (reverse rev-pre) post))
+                  (insert-into-list (cons (car rev-pre) (cons (car post) (cdr rev-pre)))
+                                    (cdr post)))]))
+
+;(insert-into-list '("C") '("A" "B"))
+;(insert-into-list '("C") '("B" "A"))
+;(insert-into-list '("C") '())
 
 (define (insert-everywhere/in-all-words str lol)
   (cond
-    ;[(empty? lol) (list (cons str lol))]
     [(empty? lol) '()]
-    [else (append (insert-into-list str (car lol))
+    [else (append (insert-into-list (cons str '()) (car lol))
                   (insert-everywhere/in-all-words str (cdr lol)))]))
 
-(insert-everywhere/in-all-words "C" '(()))
-(insert-everywhere/in-all-words "C" '(("D")))
+;(insert-everywhere/in-all-words "A" '(()))
+;(insert-everywhere/in-all-words "B" '(("A")))
+;(insert-everywhere/in-all-words "A" '(("B" "C") ("C" "B")))
 
 ; Word -> List-of-words
 ; creates all rearrangements of the letters in w
@@ -504,13 +492,27 @@
     [else (insert-everywhere/in-all-words
            (car w)
            (arrangements (cdr w)))]))
+;(arrangements '())
+;(arrangements '("A"))
+;(arrangements '("A" "B"))
+;(arrangements '("A" "B" "C"))
+;(length (arrangements '("A" "B" "C" "D")))
+     
+; Word -> String
+; converts w to a string
+(define (word->string w)
+  (cond
+    [(empty? w) ""]
+    [else (string-append (car w) (word->string (cdr w)))]))
 
-(arrangements '(C D))
 ; List-of-words -> List-of-strings
 ; turns all Words in low into Strings 
 (define (words->strings low)
-  '())
- 
+  (cond
+    [(empty? low) '()]
+    [else (append (list (word->string (car low)))
+                  (words->strings (cdr low)))]))
+
 ; List-of-strings -> List-of-strings
 ; picks out all those Strings that occur in the dictionary 
 (define (in-dictionary los) '());(index "in-dictionary")
@@ -520,8 +522,14 @@
 (define (string->word s)
   (charlist->stringlist
    (string->list s)))
-     
-; Word -> String
-; converts w to a string
-(define (word->string w)
-  (string->list w))
+
+; String -> List-of-strings
+; finds all words that the letters of some given word spell
+  
+;(check-satisfied (alternative-words "rat") all-words-from-rat?)
+ 
+(define (alternative-words s)
+  (in-dictionary
+    (words->strings (arrangements (string->word s)))))
+
+(alternative-words "abcd")
